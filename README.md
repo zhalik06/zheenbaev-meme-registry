@@ -42,26 +42,66 @@ dbcheck run demo/lab1.sql     # сценарий лабы 1
 
 ## ER-диаграмма
 
-<!-- Замените пример своими таблицами: 5+ таблиц, связь N:M через связующую таблицу. -->
-
 ```mermaid
 erDiagram
-    films ||--o{ sessions : "показывают"
-    halls ||--o{ sessions : "проходит в"
-    sessions ||--o{ tickets : "продано"
-    films ||--o{ film_genres : ""
-    genres ||--o{ film_genres : ""
+    authors ||--o{ memes : creates
+    templates ||--o{ memes : uses
+    memes ||--o{ reposts : has
+    memes ||--o{ reactions : receives
+    memes ||--o{ meme_tags : classified_by
+    tags ||--o{ meme_tags : includes
 
-    films {
+    authors {
+        int id PK
+        text display_name
+        text username UK
+        text bio
+        timestamptz created_at
+    }
+
+    templates {
+        int id PK
+        text name UK
+        text description
+        timestamptz created_at
+    }
+
+    memes {
         int id PK
         text title
+        text description
+        text media_url
+        int author_id FK
+        int template_id FK
+        int viral_index
+        timestamptz created_at
     }
-    film_genres {
-        int film_id PK, FK
-        int genre_id PK, FK
+
+    tags {
+        int id PK
+        text name UK
+        text description
+    }
+
+    meme_tags {
+        int meme_id PK, FK
+        int tag_id PK, FK
+    }
+
+    reposts {
+        int id PK
+        int meme_id FK
+        text platform
+        timestamptz reposted_at
+    }
+
+    reactions {
+        int id PK
+        int meme_id FK
+        text reaction_type
+        timestamptz created_at
     }
 ```
-
 ## Ограничения
 
 | Ограничение | Таблица и колонки | Зачем |
