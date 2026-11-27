@@ -135,7 +135,7 @@ FROM memes;
 
 
 -- 11. Как изменить индекс вирусности мема и проверить результат?
--- expect: value 0
+-- expect: value 11
 BEGIN;
 
 SELECT id, title, viral_index AS before
