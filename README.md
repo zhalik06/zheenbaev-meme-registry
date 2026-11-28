@@ -167,3 +167,26 @@ erDiagram
 4. В исправленном варианте функция `check_meme_activity_target()` выполняет `SELECT ... FOR UPDATE` для строки мема.
 
 Блокировка строки заставляет вторую транзакцию дождаться завершения первой. После этого она продолжает работу с актуальными данными. Поэтому индекс вирусности соответствует фактическому количеству репостов и реакций.
+
+
+## Резервное копирование и восстановление
+
+Создание резервной копии базы данных:
+
+```powershell
+docker compose exec db pg_dump -U postgres -d app -Fc -f /tmp/app_backup.dump
+docker compose cp db:/tmp/app_backup.dump .\backups\app_backup.dump
+```
+
+Восстановление резервной копии в отдельную чистую базу данных:
+
+```powershell
+docker compose exec db createdb -U postgres app_restore_test
+docker compose exec db pg_restore -U postgres -d app_restore_test /tmp/app_backup.dump
+```
+
+Проверка количества мемов в восстановленной базе:
+
+```powershell
+docker compose exec db psql -U postgres -d app_restore_test -c "SELECT count(*) FROM memes;"
+```
