@@ -1,7 +1,7 @@
--- Lab 3: calculations, business operation, and parameterized search
+-- Лаба 3: расчёты, бизнес-операция и поиск с параметрами
 
--- Formula for the Meme Registry topic:
--- one repost gives 10 points, one reaction gives 1 point.
+-- Формула для темы Meme Registry:
+-- один репост даёт 10 баллов, одна реакция — 1 балл.
 CREATE OR REPLACE FUNCTION meme_viral_score(p_meme_id integer)
 RETURNS integer
 LANGUAGE sql
@@ -13,10 +13,12 @@ AS $$
     )::integer;
 $$;
 
--- Recalculate the stored value after a repost or reaction changes.
+-- Пересчитывает сохранённое значение после изменения репоста или реакции.
 CREATE OR REPLACE FUNCTION recalculate_meme_viral_index(p_meme_id integer)
 RETURNS void
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
     UPDATE memes
@@ -25,14 +27,16 @@ BEGIN
 END;
 $$;
 
--- One-command business operation: register a repost.
--- The AFTER trigger recalculates viral_index automatically.
+-- Бизнес-операция, выполняемая одной командой: зарегистрировать репост.
+-- AFTER-триггер автоматически пересчитывает viral_index.
 CREATE OR REPLACE FUNCTION register_repost(
     p_meme_id integer,
     p_platform text
 )
 RETURNS integer
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_repost_id integer;
@@ -45,7 +49,7 @@ BEGIN
 END;
 $$;
 
--- Search function for a website-like filter form. Any filter may be NULL.
+-- Функция поиска для формы фильтров на сайте. Любой фильтр может быть NULL.
 CREATE OR REPLACE FUNCTION search_memes(
     p_author_id integer DEFAULT NULL,
     p_tag text DEFAULT NULL,
@@ -86,6 +90,6 @@ AS $$
     ORDER BY m.viral_index DESC, m.created_at DESC, m.id;
 $$;
 
--- Первоначально рассчитываем индекс для уже существующих мемов.
+-- Пересчитываем начальный индекс для уже существующих мемов.
 UPDATE memes AS m
 SET viral_index = meme_viral_score(m.id);

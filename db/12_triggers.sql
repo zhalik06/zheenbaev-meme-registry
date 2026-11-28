@@ -1,6 +1,7 @@
--- Lab 3: business-rule and service triggers, plus meme change journal
+-- Лаба 3: триггеры бизнес-правил и обслуживания, а также журнал изменений мемов
 
--- The journal intentionally has no FK to memes: DELETE history must remain.
+-- В журнале намеренно нет внешнего ключа на memes:
+-- история удалённых мемов должна сохраняться.
 CREATE TABLE IF NOT EXISTS meme_audit_log (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     meme_id integer NOT NULL,
@@ -14,7 +15,8 @@ CREATE TABLE IF NOT EXISTS meme_audit_log (
 CREATE INDEX IF NOT EXISTS meme_audit_log_meme_time_idx
     ON meme_audit_log (meme_id, changed_at DESC, id DESC);
 
--- Friendly validation before the FK check. The message is useful to a caller.
+-- Проверка перед проверкой внешнего ключа.
+-- Сообщение об ошибке будет понятным для вызывающей стороны.
 CREATE OR REPLACE FUNCTION check_meme_activity_target()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -28,10 +30,12 @@ BEGIN
 END;
 $$;
 
--- One trigger function is shared by reposts and reactions.
+-- Одна триггерная функция используется для репостов и реакций.
 CREATE OR REPLACE FUNCTION sync_meme_viral_index()
 RETURNS trigger
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -50,7 +54,7 @@ BEGIN
 END;
 $$;
 
--- Service trigger: set the timestamp on every meme update.
+-- Служебный триггер: устанавливает время при каждом обновлении мема.
 CREATE OR REPLACE FUNCTION set_meme_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -61,7 +65,7 @@ BEGIN
 END;
 $$;
 
--- Keep a JSONB snapshot for every INSERT, UPDATE, and DELETE.
+-- Сохраняет снимок данных в формате JSONB при каждом INSERT, UPDATE и DELETE.
 CREATE OR REPLACE FUNCTION audit_meme_change()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -89,8 +93,8 @@ BEGIN
 END;
 $$;
 
--- Return the latest recorded version at or before the requested moment.
--- NULL means that the meme did not yet exist or had already been deleted.
+-- Возвращает последнюю сохранённую версию на указанный момент времени или раньше.
+-- NULL означает, что мем ещё не существовал или уже был удалён.
 CREATE OR REPLACE FUNCTION meme_state_at(
     p_meme_id integer,
     p_at timestamptz
@@ -110,7 +114,7 @@ AS $$
     LIMIT 1;
 $$;
 
--- Recreate triggers safely when the script is run manually a second time.
+-- Безопасно пересоздаём триггеры при повторном ручном запуске скрипта.
 DROP TRIGGER IF EXISTS trg_reposts_check_meme ON reposts;
 CREATE TRIGGER trg_reposts_check_meme
 BEFORE INSERT OR UPDATE OF meme_id ON reposts
